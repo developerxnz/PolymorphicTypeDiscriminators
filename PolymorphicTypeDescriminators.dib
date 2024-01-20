@@ -1,0 +1,126 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!markdown
+
+# Description
+This repo will provider information and examples on how to use Polymorphic type discriminators for serialization and deserialization.
+
+# Requirements
+.Net 8
+
+[References](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/polymorphism?pivots=dotnet-8-0)
+
+#!markdown
+
+# Attribute Configurations
+
+## JsonPolymorphic
+This attribute allows you to configure the following
+
+- Name the discriminator property that is used for serialization and deserialization. If not set, it will default to `$type`.
+
+e.g. `[JsonPolymorphic(TypeDiscriminatorPropertyName = "DiscriminatorName")]`
+
+- Gets or sets a value that indicates whether the deserializer should ignore any unrecognized type discriminator IDs and revert to the contract of the base type.
+
+e.g. `[JsonPolymorphic(IgnoreUnrecognizedTypeDiscriminators = true)]`
+
+- Choose how to handle unknown types (haven't been configured)
+
+Options
+- UnknownDerivedTypeHandling.FailSerialization
+- JsonUnknownDerivedTypeHandling.FallBackToBaseType
+- JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
+
+e.g. `[JsonPolymorphic(UnknownDerivedTypeHandling = )]`
+
+[reference](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonunknownderivedtypehandling?view=net-8.0)
+
+## JsonDerivedTypeAttribute
+This attribute allows you to configure the following
+- DerivedType, A derived type that should be supported in polymorphic serialization of the declared base type.
+- TypeDiscriminator, The type discriminator identifier to be used for the serialization of the subtype.
+- TypeId, When implemented in a derived class, gets a unique identifier for this Attribute.
+
+e.g. `[JsonDerivedType(typeof(ThreeDimensionalPoint), "mydescriminator")]`
+
+[reference](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonderivedtypeattribute?view=net-8.0)
+
+#!markdown
+
+## Example
+
+The followimg example will demonstrate how to configure the attributes on an example class with derived types.
+
+#!csharp
+
+using System.Text.Json;
+//using System.Text.Json.Serialization;
+
+
+[JsonDerivedType(typeof(ThreeDimensionalPoint), "3Point")]
+[JsonDerivedType(typeof(FourDimensionalPoint), "4Point")]
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "SubType")]
+public class BasePoint
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+}
+
+public class ThreeDimensionalPoint : BasePoint
+{
+    public int Z { get; set; }
+}
+
+public sealed class FourDimensionalPoint : BasePoint
+{
+    public int W { get; set; }
+
+    public int Z { get; set; }
+}
+
+#!markdown
+
+# Serilization
+When serializing, you will need to serialize to the base type.
+
+#!csharp
+
+BasePoint point1 = new ThreeDimensionalPoint { X = 1, Y = 2, Z = 3 };
+BasePoint point2 = new FourDimensionalPoint { X = 1, Y = 2, W = 10 };
+
+var jsonThreeDimensionalPoint = JsonSerializer.Serialize<BasePoint>(point1);
+var jsonFourDimensionalPoint = JsonSerializer.Serialize<BasePoint>(point2);
+
+Console.WriteLine(jsonThreeDimensionalPoint);
+Console.WriteLine(jsonFourDimensionalPoint);
+
+#!markdown
+
+# Deserialization
+You will need to deserialize from the base type.
+
+#!csharp
+
+#nullable enable
+string[] jsonStrings = new [] { jsonThreeDimensionalPoint, jsonFourDimensionalPoint };
+
+
+foreach(var json in jsonStrings)
+{
+    BasePoint? result = JsonSerializer.Deserialize<BasePoint>(json);
+    switch (result) 
+    {
+        case ThreeDimensionalPoint _ : 
+            Console.WriteLine($"Returned {typeof(ThreeDimensionalPoint)}");
+            break;
+        case FourDimensionalPoint _ : 
+            Console.WriteLine($"Returned {typeof(FourDimensionalPoint)}");
+            break;
+        default:
+            Console.WriteLine("Unexpected type");
+            break;
+    };
+}

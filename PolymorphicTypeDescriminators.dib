@@ -19,10 +19,12 @@ This repo will provider information and examples on how to use Polymorphic type 
 ## JsonPolymorphic
 This attribute allows you to configure the following
 
+### TypeDiscriminatorPropertyName
 - Name the discriminator property that is used for serialization and deserialization. If not set, it will default to `$type`.
 
 e.g. `[JsonPolymorphic(TypeDiscriminatorPropertyName = "DiscriminatorName")]`
 
+### IgnoreUnrecognizedTypeDiscriminators
 - Gets or sets a value that indicates whether the deserializer should ignore any unrecognized type discriminator IDs and revert to the contract of the base type.
 
 e.g. `[JsonPolymorphic(IgnoreUnrecognizedTypeDiscriminators = true)]`
@@ -57,24 +59,22 @@ The followimg example will demonstrate how to configure the attributes on an exa
 #!csharp
 
 using System.Text.Json;
-//using System.Text.Json.Serialization;
-
 
 [JsonDerivedType(typeof(ThreeDimensionalPoint), "3Point")]
 [JsonDerivedType(typeof(FourDimensionalPoint), "4Point")]
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "SubType")]
-public class BasePoint
+public record BasePoint
 {
     public int X { get; set; }
     public int Y { get; set; }
 }
 
-public class ThreeDimensionalPoint : BasePoint
+public record ThreeDimensionalPoint : BasePoint
 {
     public int Z { get; set; }
 }
 
-public sealed class FourDimensionalPoint : BasePoint
+public record class FourDimensionalPoint : BasePoint
 {
     public int W { get; set; }
 
@@ -113,11 +113,11 @@ foreach(var json in jsonStrings)
     BasePoint? result = JsonSerializer.Deserialize<BasePoint>(json);
     switch (result) 
     {
-        case ThreeDimensionalPoint _ : 
-            Console.WriteLine($"Returned {typeof(ThreeDimensionalPoint)}");
+        case ThreeDimensionalPoint threePoint : 
+            Console.WriteLine($"Returned {typeof(ThreeDimensionalPoint)}, {threePoint}");
             break;
-        case FourDimensionalPoint _ : 
-            Console.WriteLine($"Returned {typeof(FourDimensionalPoint)}");
+        case FourDimensionalPoint fourPoint : 
+            Console.WriteLine($"Returned {typeof(FourDimensionalPoint)}, {fourPoint}");
             break;
         default:
             Console.WriteLine("Unexpected type");

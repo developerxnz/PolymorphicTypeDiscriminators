@@ -81,6 +81,20 @@ public record class FourDimensionalPoint : BasePoint
     public int Z { get; set; }
 }
 
+public record V1 (string MyProperty);
+
+public record V2 (string MyProperty);
+
+public record Dto {
+    public V1 V1 { get; set;}
+    public V2 V2 { get; set;}
+}
+
+public record Data(V1? V1, V2? V2);
+public record DataV2();
+
+public record DtoV1(Data Data);
+
 #!markdown
 
 # Serilization
